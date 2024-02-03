@@ -58,7 +58,9 @@
 			
 			</div>
 			<div style="text-align: center">
-				<button type="button" id="take_snapshot">Take snapshot</button>
+				<button type="button" id="take_snapshot" disabled>Take snapshot</button>
+				<br>
+				<textarea id="server_messages" style="width:70%; min-height: 500px;" readonly></textarea>
 			</div>
 
 
@@ -97,6 +99,9 @@
 					return
 				}
 			}
+			function handleServerResponse(msg){
+				serverMessagesElement.value += ((serverMessagesElement.value == "")?"":"\n") + msg
+			}
 		</script>
 
 		<script>
@@ -112,12 +117,25 @@
 
 			const cacheListElement = document.getElementById("cache_list")
 
-			var socket = io.connect('localhost:4004');
-			if (socket.connected === true){
+			const serverMessagesElement = document.getElementById("server_messages")
+			var socket = io.connect('localhost:8005');
+			socket.on("connect", ()=>{
 				connectionStatusElement.innerHTML = checkmarkElement
-			}
+			})
+			socket.on("disconnect", ()=>{
+				connectionStatusElement.innerHTML = errElement
+			})
 			socket.on("serverData",handleData)
 			socket.on("serverStatus",handleStatus)
+
+			document.getElementById("take_snapshot").addEventListener("click", ()=>{
+				console.log("request made")
+				socket.emit("takeSnapshot", "fit")
+			})
+			socket.on("serverResponse", handleServerResponse)
+
+
+
 		</script>
 	</body>
 </html>
