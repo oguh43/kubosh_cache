@@ -1,0 +1,18 @@
+{
+    "name": "kubosh_cache",
+    "version": "1.0.0",
+    "description": "",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.2",
+        "express-fileupload": "^1.4.3",
+        "node-convert": "^0.1.1",
+        "socket.io": "^4.5.3"
+    }
+}
