@@ -40,11 +40,7 @@
 				<div class="flex-child magenta">
 					<p>List of snapshots:</p><br>
 					<select id="cache_list" multiple>
-						<option value ="none">Nothing</option>
-						<option value ="guava">Guava</option>
-						<option value ="lychee">Lychee</option>
-						<option value ="papaya">Papaya</option>
-						<option value ="watermelon">Watermelon</option>
+						<option value ="none">None</option>
 					</select> 
 					<br><br>
 					<button type="button" disabled>Set as primary</button>
@@ -78,9 +74,29 @@
 		<script>
 			var data
 			var status
+			var primary
 			var buttons = Array.prototype.slice.call(document.getElementsByTagName("button"))
 			function handleData(data){
+				data = JSON.parse(data).sort().reverse()
 				globalThis.data = data
+				cacheListElement.innerHTML = ""
+				
+				data.forEach(timestamp=>{
+					cacheListElement.innerHTML += `<option value="${timestamp}">${new Date(parseInt(timestamp)).toLocaleString()}</option>`
+				})
+				if (primary != ""){
+					cacheListElement.value = primary
+				}
+				
+			}
+			function handlePrimary(data){
+				if (data == ""){
+					currPrimaryElement.innerHTML = errElement
+				}else{
+					data = parseInt(data)
+					currPrimaryElement.innerHTML = "&nbsp"+new Date(data).toLocaleString()
+				}
+					primary = data
 			}
 			function handleStatus(status){
 				globalThis.status = status
@@ -133,7 +149,7 @@
 				socket.emit("takeSnapshot", "fit")
 			})
 			socket.on("serverResponse", handleServerResponse)
-
+			socket.on("statePrimary", handlePrimary)
 
 
 		</script>

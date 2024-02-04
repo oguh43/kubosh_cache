@@ -1,3 +1,4 @@
+var globalMetadata = require('./metadata.json');
 var HTMLParser = require('node-html-parser');
 const express = require("express");
 const fs = require("fs")
@@ -25,6 +26,8 @@ var connected = 0
 io.on("connection", (socket) => {
 	connected++;
 	socket.emit("serverStatus", status)
+    socket.emit("statePrimary", globalMetadata["primary"])
+    socket.emit("serverData", JSON.stringify(Object.keys(globalMetadata["fit"])))
 	socket.on("disconnect", () => {
 		connected--;
 	})
@@ -48,23 +51,35 @@ function handleEnd(msg){
     io.emit("serverStatus", status)
 }
 function takeSnapshot(data){
+    let startTime = performance.now()
     status = "busy"
     io.emit("serverStatus", status)
+    let timestamp = +new Date()
+    fs.mkdirSync(`./fit/${timestamp}`)
     if (data == "fit"){
         let res = request("GET", `https://www.fit.vut.cz/study/programs/?year=${getYear()}`)
         if (res.statusCode != 200){
             handleEnd("Remote (vut) server error")
+            fs.removeSync(`./fit/${timestamp}`, {recursive: true, force: true})
             return
         }
         var root = HTMLParser.parse(res.getBody())
-        
+        fs.writeFileSync(`./fit/${timestamp}/1.html`, res.getBody())
+        globalMetadata["fit"][timestamp] = {}
+        globalMetadata["fit"][timestamp][`https://www.fit.vut.cz/study/programs/?year=${getYear()}`] = "1.html"
         let BITlink = root.getElementById("bc").getElementsByTagName("li")[0].getElementsByTagName("a")[0].getAttribute("href")
         if (!BITlink.includes("www.fit.vut.cz/study")){
             handleEnd("Unknown url course found")
+            fs.removeSync(`./fit/${timestamp}`, {recursive: true, force: true})
             return
         }
         console.log(BITlink)
-        handleEnd("Done")
+
+        globalMetadata["primary"] = timestamp
+        fs.writeFileSync("./metadata.json", JSON.stringify(globalMetadata))
+        io.emit("statePrimary", globalMetadata["primary"])
+        io.emit("serverData", JSON.stringify(Object.keys(globalMetadata["fit"])))
+        handleEnd(`Snapshot taken in ${(performance.now()-startTime)/1000}s\nPromoted new primary "${globalMetadata["primary"]}" - "${new Date(globalMetadata["primary"]).toLocaleString()}"\nClients synced`)
     }
     status = "free"
     io.emit("serverStatus", status)
